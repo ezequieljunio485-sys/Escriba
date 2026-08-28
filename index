@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escriba — transcrição local de áudio e vídeo</title>
+<style>
+:root{
+  --papel:#E6E8E9;
+  --papel-alto:#F5F6F6;
+  --pauta:#C7CDD0;
+  --pauta-forte:#A9B3B8;
+  --tinta:#14181C;
+  --tinta-2:#5A636A;
+  --tinta-3:#8B959C;
+  --selo:#17564A;
+  --selo-escuro:#0E3A31;
+  --selo-claro:#DFEAE6;
+  --ambar:#8F6200;
+  --ambar-claro:#F0E6CC;
+  --erro:#8E2B20;
+  --erro-claro:#F3E0DD;
+  --mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+  --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--papel);
+  color:var(--tinta);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.env{max-width:940px;margin:0 auto;padding:0 20px 90px}
+
+/* ---------- cabeçalho ---------- */
+.cabeca{padding:34px 0 0}
+.marca{
+  font-family:var(--mono);
+  font-size:13px;
+  letter-spacing:.42em;
+  text-transform:uppercase;
+  color:var(--selo);
+  font-weight:700;
+}
+.subtitulo{
+  font-family:var(--serif);
+  font-style:italic;
+  font-size:20px;
+  color:var(--tinta-2);
+  margin:6px 0 14px;
+  max-width:52ch;
+}
+.regua-dupla{border-top:2px solid var(--tinta);border-bottom:1px solid var(--pauta-forte);height:4px;margin-bottom:6px}
+.tira-status{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  font-family:var(--mono);font-size:11px;letter-spacing:.06em;
+  color:var(--tinta-2);padding:10px 0 26px;
+}
+.chip{
+  border:1px solid var(--pauta-forte);
+  background:var(--papel-alto);
+  padding:3px 9px;border-radius:2px;white-space:nowrap;
+}
+.chip.ok{border-color:var(--selo);color:var(--selo);background:var(--selo-claro)}
+.chip.aviso{border-color:var(--ambar);color:var(--ambar);background:var(--ambar-claro)}
+
+/* ---------- passos ---------- */
+.passo{
+  display:grid;grid-template-columns:56px 1fr;gap:0;
+  margin-bottom:30px;
+}
+.passo[hidden]{display:none}
+.passo > .num{
+  font-family:var(--mono);font-size:12px;color:var(--tinta-3);
+  border-right:1px solid var(--pauta);padding-top:3px;
+  letter-spacing:.08em;
+}
+.passo.ativo > .num{color:var(--selo);font-weight:700}
+.passo > .corpo{padding-left:22px;min-width:0}
+h2{
+  font-family:var(--sans);font-size:17px;font-weight:650;
+  margin:0 0 3px;letter-spacing:-.01em;
+}
+.porque{color:var(--tinta-2);font-size:13.5px;margin:0 0 16px;max-width:62ch}
+
+/* ---------- caixa / drop ---------- */
+.solta{
+  border:1.5px dashed var(--pauta-forte);
+  background:var(--papel-alto);
+  border-radius:3px;
+  padding:34px 22px;
+  text-align:center;
+  cursor:pointer;
+  transition:border-color .15s,background .15s;
+}
+.solta:hover,.solta:focus-visible,.solta.sobre{border-color:var(--selo);background:var(--selo-claro)}
+.solta strong{display:block;font-size:16px;margin-bottom:4px}
+.solta span{color:var(--tinta-2);font-size:13px}
+
+.cartao{
+  background:var(--papel-alto);
+  border:1px solid var(--pauta);
+  border-radius:3px;
+  padding:16px 18px;
+}
+
+.ficha{display:flex;flex-wrap:wrap;gap:6px 20px;font-family:var(--mono);font-size:12px;color:var(--tinta-2)}
+.ficha b{color:var(--tinta);font-weight:600}
+
+/* ---------- onda ---------- */
+.onda-caixa{position:relative;margin:14px 0 4px}
+canvas#onda{
+  display:block;width:100%;height:92px;
+  background:var(--papel-alto);
+  border:1px solid var(--pauta);
+  border-radius:3px;cursor:pointer;
+}
+.regua-tempo{
+  display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:10.5px;color:var(--tinta-3);margin-top:4px;
+}
+
+/* ---------- controles ---------- */
+.grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:14px 20px}
+label.campo{display:block}
+label.campo > .rotulo-campo{
+  display:block;font-family:var(--mono);font-size:10.5px;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--tinta-2);margin-bottom:5px;
+}
+select,input[type=text],input[type=password]{
+  width:100%;font-family:var(--sans);font-size:14px;color:var(--tinta);
+  background:#fff;border:1px solid var(--pauta-forte);border-radius:2px;
+  padding:8px 10px;
+}
+select:focus-visible,input:focus-visible,button:focus-visible,[contenteditable]:focus-visible,.solta:focus-visible{
+  outline:2px solid var(--selo);outline-offset:2px;
+}
+.dica{font-size:12px;color:var(--tinta-3);margin-top:5px;line-height:1.45}
+.linha-check{display:flex;gap:9px;align-items:flex-start;margin-top:14px}
+.linha-check input{margin-top:3px;accent-color:var(--selo)}
+.linha-check span{font-size:13.5px;color:var(--tinta-2)}
+.linha-check b{color:var(--tinta);font-weight:600}
+
+/* ---------- botões ---------- */
+.btn{
+  font-family:var(--sans);font-size:14px;font-weight:600;
+  background:var(--selo);color:#fff;border:1px solid var(--selo);
+  padding:10px 20px;border-radius:2px;cursor:pointer;
+}
+.btn:hover{background:var(--selo-escuro);border-color:var(--selo-escuro)}
+.btn:disabled{background:var(--pauta-forte);border-color:var(--pauta-forte);cursor:not-allowed}
+.btn-2{
+  font-family:var(--sans);font-size:13px;font-weight:600;
+  background:transparent;color:var(--selo);border:1px solid var(--pauta-forte);
+  padding:7px 14px;border-radius:2px;cursor:pointer;
+}
+.btn-2:hover{border-color:var(--selo);background:var(--selo-claro)}
+.btn-3{
+  font-family:var(--mono);font-size:11px;background:none;border:none;
+  color:var(--tinta-3);cursor:pointer;padding:2px 4px;
+}
+.btn-3:hover{color:var(--selo)}
+.barra-acoes{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:18px}
+
+/* ---------- diário de execução ---------- */
+.diario{list-style:none;margin:14px 0 0;padding:0}
+.diario li{
+  display:grid;grid-template-columns:20px 1fr;gap:10px;
+  padding:7px 0;border-bottom:1px solid var(--pauta);
+  font-size:13.5px;color:var(--tinta-3);
+}
+.diario li:last-child{border-bottom:none}
+.diario .marca-etapa{font-family:var(--mono);font-size:12px;line-height:1.5}
+.diario li.feito{color:var(--tinta-2)}
+.diario li.feito .marca-etapa{color:var(--selo)}
+.diario li.agora{color:var(--tinta);font-weight:500}
+.diario li.agora .marca-etapa{color:var(--ambar)}
+.diario small{display:block;color:var(--tinta-3);font-weight:400;font-size:12.5px}
+
+.progresso{height:5px;background:var(--pauta);border-radius:2px;overflow:hidden;margin:16px 0 6px}
+.progresso i{display:block;height:100%;width:0;background:var(--ambar);transition:width .25s}
+.progresso.pronto i{background:var(--selo)}
+.legenda-prog{font-family:var(--mono);font-size:11px;color:var(--tinta-2);display:flex;justify-content:space-between}
+
+/* ---------- transcrição ---------- */
+.papelada{
+  background:var(--papel-alto);
+  border:1px solid var(--pauta);
+  border-radius:3px;
+  padding:8px 0;
+  margin-top:16px;
+}
+.fala{
+  display:grid;grid-template-columns:82px 1fr;
+  padding:9px 20px 9px 0;
+  scroll-margin-top:20px;
+}
+.fala:hover{background:#EDF0F0}
+.fala.ativa{background:var(--selo-claro)}
+.fala .gutter{
+  border-right:1px solid var(--pauta);
+  padding-right:12px;text-align:right;
+  font-family:var(--mono);font-size:11px;color:var(--tinta-3);
+  padding-top:4px;
+}
+.fala .gutter button{
+  background:none;border:none;padding:0;cursor:pointer;
+  font-family:var(--mono);font-size:11px;color:var(--tinta-3);
+}
+.fala .gutter button:hover{color:var(--selo);text-decoration:underline}
+.fala .conteudo{padding-left:16px;min-width:0}
+.cabecalho-fala{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.rotulo{
+  font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.13em;
+  color:var(--selo);font-weight:700;border-bottom:1px dotted var(--pauta-forte);
+  padding:1px 2px;min-width:30px;display:inline-block;
+}
+.rotulo:focus{background:#fff;border-bottom-color:var(--selo)}
+.trocar{visibility:hidden}
+.fala:hover .trocar,.fala:focus-within .trocar{visibility:visible}
+.texto-fala{
+  font-family:var(--serif);font-size:16.5px;line-height:1.62;color:var(--tinta);
+  outline:none;
+}
+.texto-fala:focus{background:#fff;box-shadow:0 0 0 2px var(--selo-claro)}
+
+.resumo-bloco{
+  border-left:3px solid var(--selo);
+  background:var(--selo-claro);
+  padding:14px 18px;margin-top:16px;border-radius:0 3px 3px 0;
+}
+.resumo-bloco h3{margin:0 0 6px;font-size:13px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--selo)}
+.resumo-bloco div{font-family:var(--serif);font-size:16px;line-height:1.6;white-space:pre-wrap}
+
+/* ---------- avisos ---------- */
+.nota{
+  border-left:3px solid var(--pauta-forte);
+  padding:10px 0 10px 14px;margin-top:16px;
+  font-size:13px;color:var(--tinta-2);line-height:1.5;
+}
+.nota.falha{border-left-color:var(--erro);color:var(--erro);background:var(--erro-claro);padding:12px 14px;border-radius:0 3px 3px 0}
+.nota b{color:var(--tinta)}
+.nota.falha b{color:var(--erro)}
+
+details{margin-top:16px;border-top:1px solid var(--pauta);padding-top:12px}
+details summary{
+  cursor:pointer;font-family:var(--mono);font-size:11px;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--tinta-2);
+}
+details summary:hover{color:var(--selo)}
+details .miolo{padding-top:12px;font-size:13.5px;color:var(--tinta-2);line-height:1.6}
+details .miolo p{margin:0 0 10px}
+details .miolo ul{margin:0 0 10px;padding-left:18px}
+details .miolo li{margin-bottom:5px}
+
+.aviso-flutuante{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+  background:var(--tinta);color:#fff;padding:10px 18px;border-radius:3px;
+  font-size:13px;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;
+  max-width:88vw;text-align:center;
+}
+.aviso-flutuante.ver{opacity:1}
+
+audio{width:100%;margin-top:12px;height:36px}
+
+@media (max-width:640px){
+  .passo{grid-template-columns:34px 1fr}
+  .passo > .corpo{padding-left:14px}
+  .fala{grid-template-columns:64px 1fr}
+  .fala .conteudo{padding-left:12px}
+  .texto-fala{font-size:16px}
+  .env{padding:0 14px 70px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important;animation:none !important}
+}
+</style>
+</head>
+<body>
+
+<div class="env">
+
+  <header class="cabeca">
+    <div class="marca">Escriba</div>
+    <p class="subtitulo">Transforma uma gravação em texto organizado, com marcação de tempo e de quem fala — tudo dentro do seu navegador.</p>
+    <div class="regua-dupla"></div>
+    <div class="tira-status">
+      <span class="chip" id="chipMotor">Motor: verificando…</span>
+      <span class="chip" id="chipModelo">Modelo: não carregado</span>
+      <span class="chip">O áudio não sai do seu computador</span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- PASSO 1 -->
+    <section class="passo ativo" id="p1">
+      <div class="num">01</div>
+      <div class="corpo">
+        <h2>Escolha a gravação</h2>
+        <p class="porque">Aceita <b>.mp3</b>, <b>.mp4</b>, .m4a, .wav, .ogg e .webm. De vídeos, o Escriba usa só a trilha de áudio.</p>
+
+        <div class="solta" id="areaSolta" tabindex="0" role="button" aria-label="Escolher arquivo de áudio ou vídeo">
+          <strong>Arraste o arquivo aqui</strong>
+          <span>ou clique para procurar no computador</span>
+        </div>
+        <input type="file" id="entradaArquivo" accept="audio/*,video/*,.mp3,.mp4,.m4a,.wav,.ogg,.webm" hidden>
+
+        <div id="fichaArquivo" hidden>
+          <div class="cartao" style="margin-top:14px">
+            <div class="ficha">
+              <span>arquivo <b id="fNome">—</b></span>
+              <span>tamanho <b id="fTamanho">—</b></span>
+              <span>duração <b id="fDuracao">—</b></span>
+              <span>blocos <b id="fBlocos">—</b></span>
+            </div>
+            <div class="onda-caixa">
+              <canvas id="onda" width="1200" height="184"></canvas>
+              <div class="regua-tempo"><span>00:00</span><span id="tMeio">—</span><span id="tFim">—</span></div>
+            </div>
+            <audio id="tocador" controls preload="metadata"></audio>
+          </div>
+          <div class="barra-acoes">
+            <button class="btn-2" id="btnTrocar">Trocar arquivo</button>
+          </div>
+        </div>
+
+        <div class="nota falha" id="erroArquivo" hidden></div>
+      </div>
+    </section>
+
+    <!-- PASSO 2 -->
+    <section class="passo" id="p2" hidden>
+      <div class="num">02</div>
+      <div class="corpo">
+        <h2>Ajuste como quer a transcrição</h2>
+        <p class="porque">Os padrões já funcionam bem para reunião em português. Mexa só se precisar.</p>
+
+        <div class="cartao">
+          <div class="grade">
+            <label class="campo">
+              <span class="rotulo-campo">Idioma falado</span>
+              <select id="selIdioma">
+                <option value="pt" selected>Português</option>
+                <option value="en">Inglês</option>
+                <option value="es">Espanhol</option>
+                <option value="fr">Francês</option>
+                <option value="it">Italiano</option>
+                <option value="de">Alemão</option>
+                <option value="auto">Detectar automaticamente</option>
+              </select>
+              <span class="dica">Informar o idioma reduz bastante os erros. Só use “detectar” se não souber.</span>
+            </label>
+
+            <label class="campo">
+              <span class="rotulo-campo">Qualidade do reconhecimento</span>
+              <select id="selModelo">
+                <option value="rapido">Rápida — baixa ~40 MB</option>
+                <option value="equilibrada" selected>Equilibrada — baixa ~145 MB</option>
+                <option value="apurada">Apurada — baixa ~480 MB</option>
+              </select>
+              <span class="dica">O download acontece uma única vez e fica guardado no navegador. Quanto mais apurada, mais lenta.</span>
+            </label>
+
+            <label class="campo">
+              <span class="rotulo-campo">Pausa que separa falas</span>
+              <select id="selPausa">
+                <option value="0.7">Curta — 0,7 s</option>
+                <option value="1.2" selected>Média — 1,2 s</option>
+                <option value="2">Longa — 2,0 s</option>
+              </select>
+              <span class="dica">É o silêncio a partir do qual o texto quebra em um novo parágrafo.</span>
+            </label>
+          </div>
+
+          <div class="linha-check">
+            <input type="checkbox" id="chkAlternar" checked>
+            <span><b>Alternar interlocutores nas pausas longas.</b> Marca as falas como Interlocutor 1 e 2 a cada pausa. É um <b>palpite pelo silêncio, não reconhecimento de voz</b> — confira e renomeie no passo 4.</span>
+          </div>
+          <div class="linha-check">
+            <input type="checkbox" id="chkLimpar">
+            <span><b>Remover vícios de linguagem.</b> Apaga apenas: né, tipo assim, ahn, ãh, hum, uhum, ehm, e repetições coladas da mesma palavra.</span>
+          </div>
+        </div>
+
+        <div class="barra-acoes">
+          <button class="btn" id="btnTranscrever">Transcrever</button>
+          <span class="dica">Na primeira vez é preciso internet para baixar o modelo.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- PASSO 3 -->
+    <section class="passo" id="p3" hidden>
+      <div class="num">03</div>
+      <div class="corpo">
+        <h2>Trabalhando</h2>
+        <p class="porque">Cada etapa aparece abaixo enquanto acontece. Pode deixar a aba aberta em segundo plano.</p>
+
+        <div class="progresso" id="barraProg"><i></i></div>
+        <div class="legenda-prog"><span id="progTexto">—</span><span id="progPct">0%</span></div>
+
+        <ol class="diario" id="diario"></ol>
+
+        <div class="barra-acoes">
+          <button class="btn-2" id="btnCancelar">Cancelar</button>
+        </div>
+
+        <div class="nota falha" id="erroMotor" hidden></div>
+      </div>
+    </section>
+
+    <!-- PASSO 4 -->
+    <section class="passo" id="p4" hidden>
+      <div class="num">04</div>
+      <div class="corpo">
+        <h2>Transcrição</h2>
+        <p class="porque">Clique no horário para ouvir aquele trecho. Clique no nome do interlocutor para renomear — todas as falas dele mudam junto. O texto também é editável.</p>
+
+        <div class="ficha" style="margin-bottom:6px">
+          <span>falas <b id="rFalas">—</b></span>
+          <span>palavras <b id="rPalavras">—</b></span>
+          <span>duração <b id="rDuracao">—</b></span>
+          <span>processamento <b id="rTempo">—</b></span>
+        </div>
+
+        <div id="resumoIA" class="resumo-bloco" hidden>
+          <h3>Resumo</h3>
+          <div id="resumoTexto"></div>
+        </div>
+
+        <div class="papelada" id="papelada"></div>
+
+        <div class="barra-acoes">
+          <button class="btn" id="btnCopiar">Copiar tudo</button>
+          <button class="btn-2" id="btnMd">Baixar .md</button>
+          <button class="btn-2" id="btnTxt">Baixar .txt</button>
+          <button class="btn-2" id="btnSrt">Baixar .srt</button>
+          <button class="btn-2" id="btnVtt">Baixar .vtt</button>
+          <button class="btn-2" id="btnNovo">Nova transcrição</button>
+        </div>
+
+        <details id="painelIA">
+          <summary>Opcional — polir com o Gemini (exige internet e chave própria)</summary>
+          <div class="miolo">
+            <p>Só o <b>texto</b> já transcrito é enviado ao Google — nunca o áudio. Sem chave, o Escriba continua funcionando por completo, apenas sem resumo e sem os nomes de interlocutor deduzidos pela conversa.</p>
+            <div class="grade">
+              <label class="campo">
+                <span class="rotulo-campo">Chave da API do Google AI Studio</span>
+                <input type="password" id="chaveGemini" placeholder="AIza…" autocomplete="off">
+                <span class="dica">Fica só na memória desta aba. Ao fechar, some.</span>
+              </label>
+              <label class="campo">
+                <span class="rotulo-campo">Modelo</span>
+                <input type="text" id="modeloGemini" value="gemini-2.5-flash">
+                <span class="dica">Os nomes mudam com o tempo; ajuste se o Google renomear.</span>
+              </label>
+            </div>
+            <div class="barra-acoes">
+              <button class="btn-2" id="btnPolir">Polir e resumir</button>
+              <span class="dica" id="statusIA"></span>
+            </div>
+            <div class="nota falha" id="erroIA" hidden></div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <details id="comoFunciona">
+      <summary>Como funciona e o que ele não faz</summary>
+      <div class="miolo">
+        <p><b>O caminho do arquivo.</b> O navegador decodifica o áudio, converte para 16 kHz mono, procura os silêncios e corta a gravação em blocos nesses pontos. Cada bloco passa pelo modelo Whisper, que roda dentro da própria aba — por WebGPU quando a placa de vídeo permite, senão por WebAssembly na CPU. No fim, os trechos viram parágrafos.</p>
+        <p><b>O que sai do computador.</b> Nada do áudio. Na primeira execução o navegador baixa os arquivos do modelo e os guarda em cache; a partir daí funciona sem internet. A opção de polir com o Gemini, no passo 4, é a única que envia algo — e envia texto, não som.</p>
+        <p><b>Limites que valem conhecer:</b></p>
+        <ul>
+          <li>Não há separação real de vozes. Os rótulos de interlocutor vêm do silêncio entre as falas, não do timbre. Em conversa com sobreposição, erram bastante.</li>
+          <li>Áudio ruim, ruído de fundo, sotaque carregado e termos técnicos derrubam a precisão. Números e siglas são os primeiros a sair errados.</li>
+          <li>A leitura de <b>.mp4</b> depende dos codecs do navegador. Chrome e Edge lidam bem; no Firefox alguns arquivos falham. Se der erro, extraia o áudio para .mp3 antes.</li>
+          <li>Arquivos muito longos consomem bastante memória, porque o áudio inteiro fica descompactado na RAM. Acima de umas 3 horas, corte antes.</li>
+          <li>Rodando pela CPU, espere algo entre 1× e 3× a duração da gravação. Com WebGPU, bem mais rápido.</li>
+        </ul>
+        <p><b>Se o modelo não carregar</b> na pré-visualização, salve este arquivo e abra direto no navegador. Ambientes com política de segurança restritiva bloqueiam o download do modelo.</p>
+      </div>
+    </details>
+
+  </main>
+</div>
+
+<div class="aviso-flutuante" id="toast"></div>
+
+<!-- ======================= CÓDIGO DO TRABALHADOR ======================= -->
+<script type="text/worker" id="fonte-worker">
+let carregar = null;
+let transcritor = null;
+
+const CDNS = [
+  'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1/dist/transformers.min.js',
+  'https://unpkg.com/@huggingface/transformers@3.5.1/dist/transformers.min.js'
+];
+
+async function pegarBiblioteca(){
+  let ultimo = null;
+  for (const url of CDNS){
+    try { return await import(url); }
+    catch (e){ ultimo = e; }
+  }
+  throw new Error('Não foi possível baixar a biblioteca de reconhecimento. Verifique a conexão. (' + (ultimo && ultimo.message) + ')');
+}
+
+async function preparar(listaModelos, usarWebGPU){
+  const lib = await pegarBiblioteca();
+  lib.env.allowLocalModels = false;
+  lib.env.useBrowserCache = true;
+
+  const dispositivo = usarWebGPU ? 'webgpu' : 'wasm';
+  const dtype = usarWebGPU
+    ? { encoder_model: 'fp32', decoder_model_merged: 'q4' }
+    : { encoder_model: 'q8', decoder_model_merged: 'q8' };
+
+  let erroFinal = null;
+  for (const id of listaModelos){
+    try {
+      transcritor = await lib.pipeline('automatic-speech-recognition', id, {
+        device: dispositivo,
+        dtype: dtype,
+        progress_callback: function(info){
+          if (info.status === 'progress' && info.total){
+            self.postMessage({
+              tipo:'progresso-modelo',
+              pct: Math.round((info.loaded / info.total) * 100),
+              arquivo: info.file || ''
+            });
+          }
+        }
+      });
+      self.postMessage({ tipo:'pronto', modelo:id, dispositivo:dispositivo });
+      return;
+    } catch (e){
+      erroFinal = e;
+    }
+  }
+  throw new Error('Nenhum modelo pôde ser carregado. ' + (erroFinal && erroFinal.message ? erroFinal.message : ''));
+}
+
+self.onmessage = async function(ev){
+  const msg = ev.data;
+  try {
+    if (msg.tipo === 'preparar'){
+      if (!carregar) carregar = preparar(msg.modelos, msg.webgpu);
+      await carregar;
+      return;
+    }
+
+    if (msg.tipo === 'bloco'){
+      await carregar;
+      const opcoes = {
+        task: 'transcribe',
+        return_timestamps: true,
+        chunk_length_s: 30,
+        stride_length_s: 5
+      };
+      if (msg.idioma && msg.idioma !== 'auto') opcoes.language = msg.idioma;
+
+      const saida = await transcritor(msg.audio, opcoes);
+      const bruto = Array.isArray(saida.chunks) ? saida.chunks : [];
+      const trechos = [];
+      for (const c of bruto){
+        const t = c.timestamp || [];
+        const ini = (typeof t[0] === 'number') ? t[0] : null;
+        if (ini === null) continue;
+        const fim = (typeof t[1] === 'number') ? t[1] : ini + 2;
+        const texto = (c.text || '').trim();
+        if (!texto) continue;
+        trechos.push({ ini: ini + msg.deslocamento, fim: fim + msg.deslocamento, texto: texto });
+      }
+      if (!trechos.length && saida.text && saida.text.trim()){
+        trechos.push({ ini: msg.deslocamento, fim: msg.deslocamento + msg.duracao, texto: saida.text.trim() });
+      }
+      self.postMessage({ tipo:'bloco-pronto', indice: msg.indice, trechos: trechos });
+      return;
+    }
+  } catch (e){
+    self.postMessage({ tipo:'erro', mensagem: (e && e.message) ? e.message : String(e) });
+  }
+};
+</script>
+
+<!-- ======================= CÓDIGO PRINCIPAL ======================= -->
+<script>
+(function(){
+'use strict';
+
+const $ = function(id){ return document.getElementById(id); };
+
+const MODELOS = {
+  rapido:      ['onnx-community/whisper-tiny',  'Xenova/whisper-tiny'],
+  equilibrada: ['onnx-community/whisper-base',  'Xenova/whisper-base'],
+  apurada:     ['onnx-community/whisper-small', 'Xenova/whisper-small']
+};
+
+const E = {
+  arquivo: null,
+  audio: null,
+  duracao: 0,
+  blocos: [],
+  trechos: [],
+  falas: [],
+  worker: null,
+  rodando: false,
+  cancelado: false,
+  urlObjeto: null,
+  inicioProc: 0,
+  resumo: ''
+};
+
+/* ---------------- utilidades ---------------- */
+
+function hms(s, comMilis){
+  s = Math.max(0, s || 0);
+  const h = Math.floor(s/3600);
+  const m = Math.floor((s%3600)/60);
+  const seg = Math.floor(s%60);
+  const base = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(seg).padStart(2,'0');
+  if (!comMilis) return base;
+  const ms = Math.floor((s - Math.floor(s))*1000);
+  return base + ',' + String(ms).padStart(3,'0');
+}
+function curto(s){
+  const m = Math.floor((s||0)/60), seg = Math.floor((s||0)%60);
+  return String(m).padStart(2,'0')+':'+String(seg).padStart(2,'0');
+}
+function tamanhoLegivel(b){
+  if (b < 1024*1024) return (b/1024).toFixed(0)+' KB';
+  if (b < 1024*1024*1024) return (b/1024/1024).toFixed(1)+' MB';
+  return (b/1024/1024/1024).toFixed(2)+' GB';
+}
+let temporizadorAviso = null;
+function avisar(txt){
+  const t = $('toast');
+  t.textContent = txt;
+  t.classList.add('ver');
+  clearTimeout(temporizadorAviso);
+  temporizadorAviso = setTimeout(function(){ t.classList.remove('ver'); }, 2800);
+}
+function baixar(nome, conteudo, tipo){
+  const blob = new Blob([conteudo], {type: tipo || 'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+}
+function baseNome(){
+  return E.arquivo ? E.arquivo.name.replace(/\.[^.]+$/,'') : 'transcricao';
+}
+function mostrarErro(id, texto){
+  const el = $(id);
+  el.innerHTML = texto;
+  el.hidden = false;
+}
+
+/* ---------------- status do topo ---------------- */
+
+const temWebGPU = !!(navigator.gpu);
+$('chipMotor').textContent = temWebGPU ? 'Motor: WebGPU (rápido)' : 'Motor: CPU (WebAssembly)';
+$('chipMotor').className = 'chip ' + (temWebGPU ? 'ok' : 'aviso');
+
+/* ---------------- passo 1: arquivo ---------------- */
+
+const areaSolta = $('areaSolta');
+const entrada = $('entradaArquivo');
+
+areaSolta.addEventListener('click', function(){ entrada.click(); });
+areaSolta.addEventListener('keydown', function(e){
+  if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); entrada.click(); }
+});
+['dragenter','dragover'].forEach(function(n){
+  areaSolta.addEventListener(n, function(e){ e.preventDefault(); areaSolta.classList.add('sobre'); });
+});
+['dragleave','drop'].forEach(function(n){
+  areaSolta.addEventListener(n, function(e){ e.preventDefault(); areaSolta.classList.remove('sobre'); });
+});
+areaSolta.addEventListener('drop', function(e){
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) receber(f);
+});
+entrada.addEventListener('change', function(){
+  if (entrada.files && entrada.files[0]) receber(entrada.files[0]);
+});
+$('btnTrocar').addEventListener('click', function(){ entrada.click(); });
+
+async function receber(file){
+  $('erroArquivo').hidden = true;
+  E.arquivo = file;
+  E.trechos = [];
+  E.falas = [];
+  $('fNome').textContent = file.name;
+  $('fTamanho').textContent = tamanhoLegivel(file.size);
+  $('fDuracao').textContent = 'lendo…';
+  $('fBlocos').textContent = '—';
+  $('fichaArquivo').hidden = false;
+  areaSolta.style.display = 'none';
+
+  if (E.urlObjeto) URL.revokeObjectURL(E.urlObjeto);
+  E.urlObjeto = URL.createObjectURL(file);
+  $('tocador').src = E.urlObjeto;
+
+  if (file.size > 400*1024*1024){
+    mostrarErro('erroArquivo', 'Arquivo de ' + tamanhoLegivel(file.size) +
+      '. O áudio descompactado pode não caber na memória do navegador. Se travar, corte a gravação em partes ou converta para .mp3 antes.');
+  }
+
+  try {
+    await decodificar(file);
+  } catch (err){
+    $('fichaArquivo').hidden = true;
+    areaSolta.style.display = '';
+    mostrarErro('erroArquivo',
+      'Não deu para ler o áudio deste arquivo. Isso costuma acontecer com .mp4 em navegador sem o codec, ou com arquivo corrompido. ' +
+      'Tente no Chrome ou no Edge, ou extraia o áudio para .mp3 e envie de novo. <b>(' + (err.message||err) + ')</b>');
+    return;
+  }
+
+  $('fDuracao').textContent = hms(E.duracao);
+  $('fBlocos').textContent = E.blocos.length;
+  $('tMeio').textContent = curto(E.duracao/2);
+  $('tFim').textContent = curto(E.duracao);
+  ajustarCanvas();
+  $('p2').hidden = false;
+  $('p1').classList.remove('ativo');
+  $('p2').classList.add('ativo');
+  $('p2').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+async function decodificar(file){
+  const buf = await file.arrayBuffer();
+  let ctx;
+  try { ctx = new (window.AudioContext||window.webkitAudioContext)({sampleRate:16000}); }
+  catch(e){ ctx = new (window.AudioContext||window.webkitAudioContext)(); }
+
+  const decodificado = await new Promise(function(ok, falha){
+    const p = ctx.decodeAudioData(buf, ok, falha);
+    if (p && p.then) p.then(ok, falha);
+  });
+
+  let mono = misturarMono(decodificado);
+  if (decodificado.sampleRate !== 16000){
+    mono = await reamostrar(mono, decodificado.sampleRate, 16000);
+  }
+  try { ctx.close(); } catch(e){}
+
+  E.audio = mono;
+  E.duracao = mono.length / 16000;
+  E.blocos = fatiarNosSilencios(mono, 16000);
+}
+
+function misturarMono(ab){
+  const n = ab.length;
+  const saida = new Float32Array(n);
+  for (let c=0;c<ab.numberOfChannels;c++){
+    const dados = ab.getChannelData(c);
+    for (let i=0;i<n;i++) saida[i] += dados[i];
+  }
+  if (ab.numberOfChannels > 1){
+    for (let i=0;i<n;i++) saida[i] /= ab.numberOfChannels;
+  }
+  return saida;
+}
+
+async function reamostrar(dados, de, para){
+  const tamanho = Math.ceil(dados.length * para / de);
+  const off = new OfflineAudioContext(1, tamanho, para);
+  const buf = off.createBuffer(1, dados.length, de);
+  buf.copyToChannel(dados, 0);
+  const src = off.createBufferSource();
+  src.buffer = buf;
+  src.connect(off.destination);
+  src.start();
+  const r = await off.startRendering();
+  return r.getChannelData(0).slice();
+}
+
+/* Corta o áudio em blocos usando os silêncios como tesoura. */
+function fatiarNosSilencios(audio, sr){
+  const MAX = 210, MIN = 25;
+  const passo = Math.floor(sr * 0.02);
+  const total = Math.floor(audio.length / passo);
+  const dur = audio.length / sr;
+  if (total < 5) return [{ini:0, fim:dur}];
+
+  const rms = new Float32Array(total);
+  for (let i=0;i<total;i++){
+    let s = 0;
+    const base = i*passo;
+    for (let j=0;j<passo;j++){ const v = audio[base+j]; s += v*v; }
+    rms[i] = Math.sqrt(s/passo);
+  }
+  const ordenado = Float32Array.from(rms).sort();
+  const piso = ordenado[Math.floor(total*0.15)] || 0;
+  const pico = ordenado[Math.floor(total*0.95)] || 0.05;
+  const limiar = Math.max(piso*2.2, pico*0.06, 0.0022);
+
+  const minQuadros = 15;
+  const silencios = [];
+  let contando = 0;
+  for (let i=0;i<total;i++){
+    if (rms[i] < limiar){ contando++; }
+    else {
+      if (contando >= minQuadros) silencios.push(((i - contando/2) * passo) / sr);
+      contando = 0;
+    }
+  }
+  if (contando >= minQuadros) silencios.push(((total - contando/2) * passo) / sr);
+
+  const blocos = [];
+  let ini = 0, k = 0;
+  while (ini < dur - 0.2){
+    if (dur - ini <= MAX){ blocos.push({ini:ini, fim:dur}); break; }
+    let corte = -1;
+    while (k < silencios.length && silencios[k] < ini + MIN) k++;
+    let j = k;
+    while (j < silencios.length && silencios[j] <= ini + MAX){ corte = silencios[j]; j++; }
+    if (corte < 0) corte = ini + MAX;
+    blocos.push({ini:ini, fim:corte});
+    ini = corte;
+    k = j;
+  }
+  return blocos.length ? blocos : [{ini:0, fim:dur}];
+}
+
+/* ---------------- forma de onda ---------------- */
+
+let picos = null;
+let fracaoAtual = 0;
+
+function calcularPicos(largura){
+  const p = new Float32Array(largura);
+  const porBarra = Math.max(1, Math.floor(E.audio.length / largura));
+  for (let i=0;i<largura;i++){
+    let m = 0;
+    const base = i*porBarra;
+    const fim = Math.min(E.audio.length, base+porBarra);
+    for (let j=base;j<fim;j++){ const v = Math.abs(E.audio[j]); if (v>m) m=v; }
+    p[i] = m;
+  }
+  let maior = 0.001;
+  for (let i=0;i<largura;i++) if (p[i]>maior) maior = p[i];
+  for (let i=0;i<largura;i++) p[i] = p[i]/maior;
+  return p;
+}
+
+function desenharOnda(fracaoPronta, posicaoTocador){
+  if (!E.audio) return;
+  if (typeof fracaoPronta === 'number') fracaoAtual = fracaoPronta;
+  const cv = $('onda');
+  const ctx = cv.getContext('2d');
+  const L = cv.width, A = cv.height;
+  const barras = 300;
+  if (!picos || picos.length !== barras) picos = calcularPicos(barras);
+
+  ctx.clearRect(0,0,L,A);
+  const larguraBarra = L/barras;
+  const meio = A/2;
+
+  for (let i=0;i<barras;i++){
+    const h = Math.max(2, picos[i]*(A*0.86));
+    const transcrito = (i/barras) < fracaoAtual;
+    ctx.fillStyle = transcrito ? '#17564A' : '#A9B3B8';
+    ctx.fillRect(i*larguraBarra + larguraBarra*0.18, meio - h/2, larguraBarra*0.64, h);
+  }
+
+  if (typeof posicaoTocador === 'number' && E.duracao){
+    const x = (posicaoTocador/E.duracao)*L;
+    ctx.fillStyle = '#8F6200';
+    ctx.fillRect(x-1, 0, 2, A);
+  }
+}
+
+$('onda').addEventListener('click', function(ev){
+  if (!E.duracao) return;
+  const r = ev.currentTarget.getBoundingClientRect();
+  const frac = (ev.clientX - r.left)/r.width;
+  $('tocador').currentTime = frac*E.duracao;
+  $('tocador').play().catch(function(){});
+});
+
+$('tocador').addEventListener('timeupdate', function(){
+  const t = $('tocador').currentTime;
+  desenharOnda(undefined, t);
+  destacarFala(t);
+});
+
+/* ---------------- diário de execução ---------------- */
+
+const ETAPAS = [
+  ['ler',    'Lendo o arquivo',         'Carrega os bytes na memória da aba.'],
+  ['decod',  'Decodificando o áudio',   'Converte para 16 kHz em canal único, o formato que o modelo entende.'],
+  ['cortar', 'Cortando nos silêncios',  'Divide a gravação em blocos, sempre em pontos de pausa, para não partir palavra ao meio.'],
+  ['modelo', 'Preparando o modelo',     'Na primeira vez baixa os arquivos; depois vem do cache do navegador.'],
+  ['transc', 'Transcrevendo os blocos', 'Cada bloco vira texto com marcação de tempo.'],
+  ['montar', 'Montando as falas',       'Agrupa os trechos em parágrafos e aplica os rótulos de interlocutor.']
+];
+
+function montarDiario(){
+  const ol = $('diario');
+  ol.innerHTML = '';
+  ETAPAS.forEach(function(et){
+    const li = document.createElement('li');
+    li.id = 'et-'+et[0];
+    li.innerHTML = '<span class="marca-etapa">·</span><span class="rotulo-etapa">' + et[1] +
+                   '<small>' + et[2] + '</small></span>';
+    ol.appendChild(li);
+  });
+}
+function etapa(id, estado, titulo){
+  const li = $('et-'+id);
+  if (!li) return;
+  li.classList.remove('agora','feito');
+  if (estado) li.classList.add(estado);
+  li.querySelector('.marca-etapa').textContent =
+    estado === 'feito' ? '✓' : (estado === 'agora' ? '▸' : '·');
+  if (titulo){
+    const alvo = li.querySelector('.rotulo-etapa');
+    alvo.firstChild.nodeValue = titulo;
+  }
+}
+function progresso(pct, texto, pronto){
+  $('barraProg').querySelector('i').style.width = Math.max(0,Math.min(100,pct))+'%';
+  $('barraProg').classList.toggle('pronto', !!pronto);
+  $('progPct').textContent = Math.round(pct)+'%';
+  if (texto) $('progTexto').textContent = texto;
+}
+
+/* ---------------- passo 3: transcrição ---------------- */
+
+$('btnTranscrever').addEventListener('click', iniciar);
+$('btnCancelar').addEventListener('click', function(){
+  E.cancelado = true;
+  if (E.worker){ E.worker.terminate(); E.worker = null; }
+  E.rodando = false;
+  $('btnTranscrever').disabled = false;
+  progresso(0, 'Cancelado.');
+  avisar('Transcrição cancelada.');
+});
+
+function criarWorker(){
+  const fonte = $('fonte-worker').textContent;
+  const url = URL.createObjectURL(new Blob([fonte], {type:'text/javascript'}));
+  return new Worker(url, {type:'module'});
+}
+
+async function iniciar(){
+  if (!E.audio) return;
+  E.rodando = true;
+  E.cancelado = false;
+  E.trechos = [];
+  E.resumo = '';
+  E.inicioProc = performance.now();
+
+  $('p2').classList.remove('ativo');
+  $('p3').hidden = false;
+  $('p3').classList.add('ativo');
+  $('p4').hidden = true;
+  $('resumoIA').hidden = true;
+  $('erroMotor').hidden = true;
+  $('btnTranscrever').disabled = true;
+  montarDiario();
+  desenharOnda(0);
+  $('p3').scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  etapa('ler','feito');
+  etapa('decod','feito', 'Áudio decodificado — ' + hms(E.duracao) + ' a 16 kHz mono');
+  etapa('cortar','feito', 'Cortado em ' + E.blocos.length + (E.blocos.length===1?' bloco':' blocos'));
+
+  const idioma = $('selIdioma').value;
+  const lista = MODELOS[$('selModelo').value];
+
+  etapa('modelo','agora');
+  progresso(0, 'Preparando o modelo…');
+
+  try {
+    E.worker = criarWorker();
+  } catch(e){
+    return falharMotor('Não foi possível iniciar o processo de reconhecimento neste navegador. Salve o arquivo e abra-o direto no Chrome ou no Edge.');
+  }
+
+  let resolverPreparo, rejeitarPreparo;
+  const preparo = new Promise(function(ok,err){ resolverPreparo = ok; rejeitarPreparo = err; });
+  const pendentes = new Map();
+
+  E.worker.onmessage = function(ev){
+    const m = ev.data;
+    if (m.tipo === 'progresso-modelo'){
+      progresso(m.pct * 0.15, 'Baixando o modelo — ' + m.pct + '%');
+      etapa('modelo','agora','Preparando o modelo (' + m.pct + '%)');
+    } else if (m.tipo === 'pronto'){
+      resolverPreparo(m);
+    } else if (m.tipo === 'bloco-pronto'){
+      const p = pendentes.get(m.indice);
+      if (p){ pendentes.delete(m.indice); p.ok(m.trechos); }
+    } else if (m.tipo === 'erro'){
+      const err = new Error(m.mensagem);
+      rejeitarPreparo(err);
+      pendentes.forEach(function(p){ p.err(err); });
+      pendentes.clear();
+    }
+  };
+  E.worker.onerror = function(e){
+    const err = new Error(e.message || 'falha no processo de reconhecimento');
+    rejeitarPreparo(err);
+    pendentes.forEach(function(p){ p.err(err); });
+    pendentes.clear();
+  };
+
+  E.worker.postMessage({tipo:'preparar', modelos:lista, webgpu:temWebGPU});
+
+  let info;
+  try {
+    info = await preparo;
+  } catch(e){
+    return falharMotor('O modelo não carregou. <b>' + (e.message||'') + '</b>' +
+      '<br><br>O que costuma resolver: conferir a internet (o download só acontece na primeira vez), escolher a qualidade “Rápida”, ou abrir este arquivo direto no navegador em vez de dentro de outra página.');
+  }
+  if (E.cancelado) return;
+
+  const nomeCurto = info.modelo.split('/').pop();
+  etapa('modelo','feito', 'Modelo pronto — ' + nomeCurto + ' via ' + (info.dispositivo === 'webgpu' ? 'WebGPU' : 'CPU'));
+  $('chipModelo').textContent = 'Modelo: ' + nomeCurto;
+  $('chipModelo').className = 'chip ok';
+  etapa('transc','agora');
+
+  const total = E.blocos.length;
+  for (let i=0;i<total;i++){
+    if (E.cancelado) return;
+    const b = E.blocos[i];
+    const a = Math.floor(b.ini*16000);
+    const z = Math.min(E.audio.length, Math.floor(b.fim*16000));
+    const fatia = E.audio.slice(a, z);
+
+    const espera = new Promise(function(ok,err){ pendentes.set(i,{ok:ok,err:err}); });
+    E.worker.postMessage({
+      tipo:'bloco', indice:i, audio:fatia,
+      deslocamento:b.ini, duracao:(z-a)/16000, idioma:idioma
+    }, [fatia.buffer]);
+
+    let trechos;
+    try { trechos = await espera; }
+    catch(e){
+      return falharMotor('A transcrição parou no bloco ' + (i+1) + ' de ' + total + '. <b>' + (e.message||'') + '</b>' +
+        '<br><br>Em geral é falta de memória. Tente a qualidade “Rápida” ou divida a gravação em arquivos menores.');
+    }
+    if (E.cancelado) return;
+
+    E.trechos.push.apply(E.trechos, trechos);
+    const frac = (i+1)/total;
+    progresso(15 + frac*82, 'Bloco ' + (i+1) + ' de ' + total + ' — até ' + hms(b.fim));
+    etapa('transc','agora', 'Transcrevendo os blocos (' + (i+1) + '/' + total + ')');
+    desenharOnda(frac);
+  }
+
+  etapa('transc','feito', 'Blocos transcritos — ' + total + ' de ' + total);
+  etapa('montar','agora');
+
+  E.falas = montarFalas(E.trechos);
+  etapa('montar','feito', 'Falas montadas — ' + E.falas.length);
+  progresso(100, 'Concluído.', true);
+  desenharOnda(1);
+
+  E.rodando = false;
+  if (E.worker){ E.worker.terminate(); E.worker = null; }
+  $('btnTranscrever').disabled = false;
+
+  if (!E.falas.length){
+    mostrarErro('erroMotor','O modelo não encontrou fala neste áudio. Confira se a gravação tem som audível e se o idioma escolhido confere.');
+    return;
+  }
+  mostrarResultado();
+}
+
+function falharMotor(html){
+  E.rodando = false;
+  $('btnTranscrever').disabled = false;
+  if (E.worker){ E.worker.terminate(); E.worker = null; }
+  mostrarErro('erroMotor', html);
+  progresso(0, 'Interrompido.');
+}
+
+/* ---------------- montagem das falas ---------------- */
+
+const VICIOS = /\b(né|tipo assim|ahn|ãh|hum+|uhum|ehm)\b[,\s]*/gi;
+
+function limpar(t){
+  let s = t.replace(/\s+/g,' ').trim();
+  if ($('chkLimpar').checked){
+    s = s.replace(VICIOS, '');
+    s = s.replace(/\b(\w+)(\s+\1\b)+/gi, '$1');
+    s = s.replace(/\s+([,.!?;:])/g,'$1').replace(/\s{2,}/g,' ').trim();
+    if (s) s = s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  return s;
+}
+
+function montarFalas(trechos){
+  const pausa = parseFloat($('selPausa').value);
+  const alternar = $('chkAlternar').checked;
+  const falas = [];
+  let atual = null;
+  let quem = 1;
+
+  for (let i=0;i<trechos.length;i++){
+    const t = trechos[i];
+    const anterior = i > 0 ? trechos[i-1] : null;
+    const intervalo = anterior ? (t.ini - anterior.fim) : 0;
+    const quebrar = !atual || intervalo >= pausa ||
+                    atual.texto.length > 620 ||
+                    (t.fim - atual.ini) > 55;
+
+    if (quebrar){
+      if (atual){
+        falas.push(atual);
+        if (alternar && intervalo >= pausa) quem = (quem === 1 ? 2 : 1);
+      }
+      atual = {
+        ini: t.ini, fim: t.fim,
+        texto: t.texto.trim(),
+        quem: 'Interlocutor ' + (alternar ? quem : 1)
+      };
+    } else {
+      atual.texto += ' ' + t.texto.trim();
+      atual.fim = t.fim;
+    }
+  }
+  if (atual) falas.push(atual);
+
+  falas.forEach(function(f){ f.texto = limpar(f.texto); });
+  return falas.filter(function(f){ return f.texto.length > 0; });
+}
+
+/* ---------------- passo 4: resultado ---------------- */
+
+function mostrarResultado(){
+  $('p3').classList.remove('ativo');
+  $('p4').hidden = false;
+  $('p4').classList.add('ativo');
+
+  let palavras = 0;
+  E.falas.forEach(function(f){
+    palavras += f.texto.split(/\s+/).filter(Boolean).length;
+  });
+  $('rFalas').textContent = E.falas.length;
+  $('rPalavras').textContent = palavras.toLocaleString('pt-BR');
+  $('rDuracao').textContent = hms(E.duracao);
+  $('rTempo').textContent = hms((performance.now() - E.inicioProc)/1000);
+
+  renderizar();
+  $('p4').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function renderizar(){
+  const alvo = $('papelada');
+  alvo.innerHTML = '';
+  E.falas.forEach(function(f, i){
+    const div = document.createElement('div');
+    div.className = 'fala';
+    div.dataset.indice = i;
+
+    const g = document.createElement('div');
+    g.className = 'gutter';
+    const bt = document.createElement('button');
+    bt.type = 'button';
+    bt.textContent = hms(f.ini);
+    bt.title = 'Ouvir a partir daqui';
+    bt.addEventListener('click', function(){
+      $('tocador').currentTime = f.ini;
+      $('tocador').play().catch(function(){});
+    });
+    g.appendChild(bt);
+
+    const c = document.createElement('div');
+    c.className = 'conteudo';
+
+    const cab = document.createElement('div');
+    cab.className = 'cabecalho-fala';
+
+    const rot = document.createElement('span');
+    rot.className = 'rotulo';
+    rot.contentEditable = 'true';
+    rot.spellcheck = false;
+    rot.textContent = f.quem;
+    rot.title = 'Clique para renomear este interlocutor em todas as falas';
+    rot.addEventListener('focus', function(){ rot.dataset.antes = rot.textContent; });
+    rot.addEventListener('keydown', function(e){
+      if (e.key === 'Enter'){ e.preventDefault(); rot.blur(); }
+    });
+    rot.addEventListener('blur', function(){
+      const novo = rot.textContent.replace(/\s+/g,' ').trim();
+      const antes = rot.dataset.antes;
+      if (!novo || novo === antes){ rot.textContent = antes; return; }
+      let n = 0;
+      E.falas.forEach(function(x){ if (x.quem === antes){ x.quem = novo; n++; } });
+      renderizar();
+      avisar('Renomeado: ' + antes + ' → ' + novo + ' (' + n + (n===1?' fala)':' falas)'));
+    });
+
+    const troca = document.createElement('button');
+    troca.className = 'btn-3 trocar';
+    troca.type = 'button';
+    troca.textContent = '⇄ trocar';
+    troca.title = 'Passar só esta fala para outro interlocutor';
+    troca.addEventListener('click', function(){
+      const nomes = Array.from(new Set(E.falas.map(function(x){ return x.quem; })));
+      if (nomes.length < 2){ avisar('Só existe um interlocutor. Renomeie uma fala primeiro.'); return; }
+      const pos = nomes.indexOf(f.quem);
+      f.quem = nomes[(pos+1) % nomes.length];
+      renderizar();
+    });
+
+    cab.appendChild(rot);
+    cab.appendChild(troca);
+
+    const p = document.createElement('div');
+    p.className = 'texto-fala';
+    p.contentEditable = 'true';
+    p.textContent = f.texto;
+    p.addEventListener('blur', function(){ f.texto = p.textContent.trim(); });
+
+    c.appendChild(cab);
+    c.appendChild(p);
+    div.appendChild(g);
+    div.appendChild(c);
+    alvo.appendChild(div);
+  });
+}
+
+function destacarFala(t){
+  if (!E.falas.length) return;
+  const nos = $('papelada').children;
+  for (let i=0;i<nos.length;i++){
+    const f = E.falas[i];
+    const dentro = f && t >= f.ini && t <= f.fim + 0.4;
+    nos[i].classList.toggle('ativa', !!dentro);
+  }
+}
+
+/* ---------------- exportações ---------------- */
+
+function comoTexto(){
+  return E.falas.map(function(f){
+    return '[' + hms(f.ini) + '] ' + f.quem + ': ' + f.texto;
+  }).join('\n\n');
+}
+
+function comoMarkdown(){
+  const cab = [
+    '# Transcrição — ' + baseNome(),
+    '',
+    '**Arquivo:** ' + (E.arquivo ? E.arquivo.name : '—') + '  ',
+    '**Duração:** ' + hms(E.duracao) + '  ',
+    '**Idioma:** ' + $('selIdioma').selectedOptions[0].textContent + '  ',
+    '**Falas:** ' + E.falas.length + '  ',
+    '**Transcrito em:** ' + new Date().toLocaleString('pt-BR') + '  ',
+    '**Rótulos de interlocutor:** ' + ($('chkAlternar').checked
+        ? 'atribuídos por pausa (heurística), sujeitos a revisão'
+        : 'não atribuídos automaticamente'),
+    ''
+  ].join('\n');
+
+  const resumo = E.resumo ? ('## Resumo\n\n' + E.resumo + '\n\n') : '';
+  const corpo = E.falas.map(function(f){
+    return '**[' + hms(f.ini) + '] ' + f.quem + ':** ' + f.texto;
+  }).join('\n\n');
+
+  return cab + '\n' + resumo + '## Transcrição\n\n' + corpo + '\n';
+}
+
+function comoLegenda(vtt){
+  const linhas = [];
+  if (vtt) linhas.push('WEBVTT', '');
+  E.trechos.forEach(function(t, i){
+    const a = vtt ? hms(t.ini,true).replace(',','.') : hms(t.ini,true);
+    const b = vtt ? hms(t.fim,true).replace(',','.') : hms(t.fim,true);
+    linhas.push(String(i+1), a + ' --> ' + b, t.texto, '');
+  });
+  return linhas.join('\n');
+}
+
+$('btnCopiar').addEventListener('click', async function(){
+  try {
+    await navigator.clipboard.writeText(comoMarkdown());
+    avisar('Transcrição copiada.');
+  } catch(e){
+    avisar('O navegador bloqueou a cópia. Use “Baixar .md”.');
+  }
+});
+$('btnMd').addEventListener('click', function(){ baixar(baseNome()+'.md', comoMarkdown(), 'text/markdown;charset=utf-8'); });
+$('btnTxt').addEventListener('click', function(){ baixar(baseNome()+'.txt', comoTexto()); });
+$('btnSrt').addEventListener('click', function(){ baixar(baseNome()+'.srt', comoLegenda(false)); });
+$('btnVtt').addEventListener('click', function(){ baixar(baseNome()+'.vtt', comoLegenda(true), 'text/vtt;charset=utf-8'); });
+$('btnNovo').addEventListener('click', function(){ location.reload(); });
+
+/* ---------------- polimento opcional pelo Gemini ---------------- */
+
+$('btnPolir').addEventListener('click', polirComGemini);
+
+async function chamarGemini(chave, modelo, prompt){
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+              encodeURIComponent(modelo) + ':generateContent?key=' + encodeURIComponent(chave);
+  const r = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
+  });
+  if (!r.ok){
+    const t = await r.text();
+    throw new Error('HTTP ' + r.status + ' — ' + t.slice(0,300));
+  }
+  const d = await r.json();
+  const cand = (d.candidates || [])[0] || {};
+  const partes = (cand.content || {}).parts || [];
+  return partes.map(function(p){ return p.text || ''; }).join('').trim();
+}
+
+async function polirComGemini(){
+  const chave = $('chaveGemini').value.trim();
+  const modelo = $('modeloGemini').value.trim() || 'gemini-2.5-flash';
+  $('erroIA').hidden = true;
+  if (!chave){
+    mostrarErro('erroIA','Informe a chave da API para usar esta parte. Ela é gerada em aistudio.google.com.');
+    return;
+  }
+  if (!E.falas.length) return;
+
+  $('btnPolir').disabled = true;
+  const st = $('statusIA');
+
+  try {
+    const LOTE = 40;
+    const ajustes = [];
+    for (let i=0;i<E.falas.length;i+=LOTE){
+      st.textContent = 'Polindo falas ' + (i+1) + '–' + Math.min(i+LOTE, E.falas.length) + ' de ' + E.falas.length + '…';
+      const lote = E.falas.slice(i, i+LOTE);
+      const entradaTxt = lote.map(function(f,k){ return (i+k) + '|' + f.quem + '|' + f.texto; }).join('\n');
+      const prompt =
+        'Você recebe trechos de uma transcrição automática em português, no formato ÍNDICE|INTERLOCUTOR|TEXTO.\n' +
+        '1. Corrija pontuação, maiúsculas e erros óbvios de reconhecimento. Não invente conteúdo e não resuma.\n' +
+        '2. Se pelo contexto der para identificar quem fala (um nome citado, um papel como cliente ou engenheiro), substitua o rótulo. Se não der, mantenha o rótulo recebido.\n' +
+        'Responda SOMENTE com as mesmas linhas no formato ÍNDICE|INTERLOCUTOR|TEXTO, uma por linha, sem comentários e sem marcação de código.\n\n' +
+        entradaTxt;
+
+      const saida = await chamarGemini(chave, modelo, prompt);
+      saida.split('\n').forEach(function(linha){
+        const m = linha.match(/^\s*(\d+)\s*\|([^|]*)\|(.*)$/);
+        if (!m) return;
+        const idx = parseInt(m[1],10);
+        if (!E.falas[idx]) return;
+        ajustes.push({idx:idx, quem:m[2].trim() || E.falas[idx].quem, texto:m[3].trim()});
+      });
+    }
+    ajustes.forEach(function(n){
+      if (n.texto){ E.falas[n.idx].quem = n.quem; E.falas[n.idx].texto = n.texto; }
+    });
+    renderizar();
+
+    st.textContent = 'Gerando o resumo…';
+    const base = comoTexto().slice(0, 60000);
+    const resumo = await chamarGemini(chave, modelo,
+      'Leia a transcrição abaixo e escreva, em português do Brasil:\n' +
+      '- um parágrafo curto dizendo do que se trata;\n' +
+      '- a lista dos assuntos tratados, cada item com o horário aproximado;\n' +
+      '- a lista de decisões e pendências, se houver.\n' +
+      'Não invente nada que não esteja no texto. Sem marcação de código.\n\n' + base);
+
+    E.resumo = resumo;
+    $('resumoTexto').textContent = resumo;
+    $('resumoIA').hidden = false;
+    st.textContent = 'Pronto.';
+    avisar('Transcrição polida e resumida.');
+  } catch(e){
+    st.textContent = '';
+    mostrarErro('erroIA','O Gemini recusou a chamada. <b>' + (e.message||e) + '</b>' +
+      '<br><br>Verifique se a chave está válida, se o nome do modelo existe e se há internet. A transcrição local continua intacta.');
+  } finally {
+    $('btnPolir').disabled = false;
+  }
+}
+
+/* ---------------- ajustes de tela ---------------- */
+
+let temporizadorTela = null;
+function ajustarCanvas(){
+  const cv = $('onda');
+  const largura = cv.clientWidth || 900;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.floor(largura*dpr);
+  cv.height = Math.floor(92*dpr);
+  picos = null;
+  desenharOnda(undefined, $('tocador').currentTime);
+}
+window.addEventListener('resize', function(){
+  clearTimeout(temporizadorTela);
+  temporizadorTela = setTimeout(ajustarCanvas, 150);
+});
+
+})();
+</script>
+</body>
+</html>
